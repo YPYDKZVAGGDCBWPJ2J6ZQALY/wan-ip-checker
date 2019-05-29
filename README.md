@@ -2,6 +2,7 @@
 
 This is a small daemon program that checks if the WAN address has changed.
 It is used with another program that updates DNS records on a remote server.
+Its purpose is to reduce the load on the remote server.
 
 It does the following:
 
