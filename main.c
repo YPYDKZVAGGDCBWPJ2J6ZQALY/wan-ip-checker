@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include <time.h>
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -19,7 +20,7 @@ union address
 
 union address  addr;
 char           text[16];
-char const     data[16];
+char           data[16];
 
 int
 main (int argc, char** argv)
