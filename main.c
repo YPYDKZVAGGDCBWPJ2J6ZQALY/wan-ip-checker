@@ -2,6 +2,7 @@
 /* 2019 Fumu-no-Kagomeko. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
@@ -30,13 +31,17 @@ main (int argc, char** argv)
   int srv_fd;
   int cln_fd;
 
-  if (argc < 2)
+  if (argc < 3)
   {
-    fputs("Usage: wan-ip-checker <dns-update-program>\n", stderr);
-    fputs("The <dns-update-program> must exit with 0\n", stderr);
-    fputs("and return an IPv4 address via stdout.\n", stderr);
+    fputs(
+     "Usage: wan-ip-checker LOCAL-ADDR DNS-UPDATE-PROGRAM\n"
+     "\n"
+     "The DNS-UPDATE-PROGRAM must exit with 0 and return a line with\n"
+     "the current IPv4 (literal) address on its standard output stream.\n"
+     , stderr
+    );
 
-    return 1;
+    return EXIT_FAILURE;
   }
 
   openlog("wan-ip-checker", 0, LOG_DAEMON);
@@ -49,12 +54,19 @@ main (int argc, char** argv)
     syslog(LOG_ERR, "Failed to create the server socket.");
     closelog();
 
-    return 1;
+    return EXIT_FAILURE;
   }
 
   addr.ip.sin_family = AF_INET;
   addr.ip.sin_port = 0xFFFF;
-  addr.ip.sin_addr.s_addr = 0x03010000 | (168 << 8) | 192; // INADDR_ANY;
+
+  if (inet_aton(argv[1], &addr.ip.sin_addr) == 0)
+  {
+    syslog(LOG_ERR, "Invalid local IPv4 address: %s", argv[1]);
+    closelog();
+
+    return EXIT_FAILURE;
+  }
 
   if (bind(srv_fd, &addr.any, sizeof(addr.ip)) == -1)
   {
@@ -71,7 +83,7 @@ main (int argc, char** argv)
   }
 
 update_addr:
-  prog = popen(argv[1], "r");
+  prog = popen(argv[2], "r");
   size = fread(text, 1, 14, prog);
   cln_fd = pclose(prog);
 
@@ -164,5 +176,5 @@ error:
   close(srv_fd);
   closelog();
 
-  return 1;
+  return EXIT_FAILURE;
 }
